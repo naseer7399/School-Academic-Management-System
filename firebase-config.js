@@ -12,7 +12,6 @@
     measurementId: "G-NTGSKXKYY2"
   };
 
-  // Initialize Firebase
-//  const app = initializeApp(firebaseConfig);
-//  const analytics = getAnalytics(app);
-
+ // Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
