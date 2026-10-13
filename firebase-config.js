@@ -13,5 +13,4 @@
   };
 
  // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+const FIREBASE_ENABLED = true;
