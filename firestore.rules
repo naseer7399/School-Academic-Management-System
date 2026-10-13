@@ -1,0 +1,90 @@
+rules_version = '2';
+// Access rules. Paste into Firebase console > Firestore Database > Rules > Publish.
+// Every user has a document users/{uid} (created by an admin) with: role, active, name, classIds[], childIds[], studentId.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function me() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function signedIn() {
+      return request.auth != null
+        && exists(/databases/$(db)/documents/users/$(request.auth.uid))
+        && me().active == true;
+    }
+    function isAdmin()   { return signedIn() && me().role == 'admin'; }
+    function isTeacher() { return signedIn() && me().role == 'teacher'; }
+    function teaches(c)  { return isTeacher() && (c in me().classIds); }
+    function hasChild(s) { return signedIn() && me().role == 'parent' && (s in me().childIds); }
+    function isSelf(s)   { return signedIn() && me().role == 'student' && me().studentId == s; }
+    function goodStatus(s) { return s in ['P', 'A', 'L', 'E']; }
+
+    // Users: you can read your own record; only admins create or change users (so nobody can promote themselves).
+    match /users/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /settings/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /classes/{id}  { allow read: if signedIn(); allow write: if isAdmin(); }
+
+    // Students: admin all; teacher their classes; parent their children; student themself.
+    match /students/{sid} {
+      allow get: if isAdmin() || teaches(resource.data.classId) || hasChild(sid) || isSelf(sid);
+      allow list: if isAdmin() || teaches(resource.data.classId);
+      allow write: if isAdmin();
+    }
+
+    // Attendance: one document per student per day, id = date_studentId (saving twice overwrites, never duplicates).
+    match /attendance/{aid} {
+      allow read: if isAdmin() || teaches(resource.data.classId)
+                  || hasChild(resource.data.studentId) || isSelf(resource.data.studentId);
+      allow create, update: if (isAdmin() || teaches(request.resource.data.classId))
+                  && goodStatus(request.resource.data.status)
+                  && aid == request.resource.data.date + '_' + request.resource.data.studentId;
+      allow delete: if isAdmin();
+    }
+
+    // Exams: everyone signed in can see exam names; admin manages; a teacher may only move draft -> submitted.
+    match /exams/{eid} {
+      allow read: if signedIn();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (teaches(resource.data.classId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+            && resource.data.status == 'draft' && request.resource.data.status == 'submitted');
+    }
+
+    // Marks: parents and students only ever see published marks. Teachers edit drafts only, and only while the exam is a draft.
+    match /marks/{mid} {
+      allow read: if isAdmin() || teaches(resource.data.classId)
+                  || ((hasChild(resource.data.studentId) || isSelf(resource.data.studentId)) && resource.data.published == true);
+      allow create, update: if isAdmin()
+        || (teaches(request.resource.data.classId)
+            && request.resource.data.published == false
+            && (resource == null || resource.data.published == false)
+            && get(/databases/$(db)/documents/exams/$(request.resource.data.examId)).data.status == 'draft');
+      allow delete: if isAdmin();
+    }
+
+    // Syllabus: readable by signed-in users (not sensitive); written by admin or the class teacher.
+    match /syllabus/{id} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() || teaches(request.resource.data.classId);
+      allow delete: if isAdmin() || teaches(resource.data.classId);
+    }
+
+    // Notices: one document per recipient student (studentId 'all' = school-wide).
+    match /notices/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.studentId == 'all')
+        || teaches(resource.data.classId)
+        || hasChild(resource.data.studentId) || isSelf(resource.data.studentId);
+      allow create, update: if isAdmin()
+        || (teaches(request.resource.data.classId) && request.resource.data.studentId != 'all'
+            && request.resource.data.category in ['attendance', 'announcement']);
+      allow delete: if isAdmin();
+    }
+
+    match /{other=**} { allow read, write: if false; }
+  }
+}

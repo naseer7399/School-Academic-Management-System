@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Academic Manager</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="msg" class="center hidden"></div>
+
+<div id="login" class="center hidden">
+  <form id="loginForm" class="card login">
+    <h1 id="loginName">School Academic Manager</h1>
+    <p class="muted">Sign in with the email and password given by your school.</p>
+    <label>Email<input id="email" type="email" autocomplete="username" required></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+    <p id="loginErr" class="err"></p>
+    <button class="btn" type="submit">Sign in</button>
+    <button class="link" type="button" id="forgot">Forgot password?</button>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <aside>
+    <div id="brand" class="brand"></div>
+    <nav id="nav"></nav>
+    <div class="who" id="who"></div>
+    <button class="link" id="logout">Sign out</button>
+  </aside>
+  <main>
+    <h2 id="title"></h2>
+    <div id="view"></div>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
