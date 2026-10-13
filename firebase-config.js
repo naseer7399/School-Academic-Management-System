@@ -2,7 +2,7 @@
    Use a NEW Firebase project for this app, separate from the Ikhlas School Manager project.
    These values are not secret; your data is protected by firestore.rules and by signing in. */
 
-  const firebaseConfig = {
+  const FIREBASE_CONFIG = {
     apiKey: "AIzaSyAzLgPO5YKeZoW2oGOputc5v6WMQNAsm3Y",
     authDomain: "sam-db-iks.firebaseapp.com",
     projectId: "sam-db-iks",
@@ -12,5 +12,3 @@
     measurementId: "G-NTGSKXKYY2"
   };
 
- // Initialize Firebase
-const FIREBASE_ENABLED = true;
